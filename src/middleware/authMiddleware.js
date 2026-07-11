@@ -6,21 +6,36 @@ const jwtSecret =
 
 export async function protect(req, res, next) {
   try {
-    const header = req.headers.authorization;
+    const authHeader = req.headers.authorization;
 
-    if (!header?.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Not Authorized, No Token" });
+    if (!authHeader) {
+      return res
+        .status(401)
+        .json({ message: "Authorization header is missing" });
     }
 
-    const decoded = jwt.verify(header.split(" ")[1], jwtSecret);
-    req.user = await User.findById(decoded.userId || decoded.id);
-
-    if (!req.user) {
-      return res.status(401).json({ message: "User Not Found" });
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Invalid authorization format" });
     }
+
+    const token = authHeader.split(" ")[1];
+
+    const decoded = jwt.verify(token, jwtSecret);
+    const user = await User.findById(decoded.userId).select("-password");
+
+    if (!user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "User Not Found" });
+    }
+
+    req.user = user;
+
     next();
   } catch (error) {
-    res.status(401).json({ message: "Not Authorized, token failed" });
+    res
+      .status(401)
+      .json({ success: false, message: "Not Authorized, token failed" });
   }
 }
 
