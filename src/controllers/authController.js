@@ -16,7 +16,7 @@ export async function register(req, res) {
       email,
       password: hashedPassword,
     });
-    const token = generateToken(user._id);
+    const token = generateToken(newUser._id);
     return res.status(201).json({
       success: true,
       message: "User registered successfully",

@@ -4,9 +4,11 @@ import cors from "cors";
 import authRoutes from "./Routes/authRoutes.js";
 import eventRoutes from "./Routes/eventRoutes.js";
 import connectDB from "./config/db.js";
+import dns from "node:dns/promises";
+
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 dotenv.config();
-
 const app = express();
 
 app.use(cors());
@@ -24,5 +26,5 @@ app.use("/api/events", eventRoutes);
 const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+  `Server started on port ${PORT}`;
 });
