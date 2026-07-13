@@ -140,3 +140,25 @@ export async function getEventById(req, res) {
     });
   }
 }
+
+export async function getEvents(req, res) {
+  try {
+    const events = await Event.find({
+      visibility: "public",
+    })
+      .populate("host", "name email")
+      .sort({ startAt: 1 });
+
+    return res.status(200).json({
+      success: true,
+      events,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
