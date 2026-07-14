@@ -7,6 +7,11 @@ import {
   updateEvent,
   deleteEvent,
 } from "../controllers/eventController.js";
+import {
+  createRSVP,
+  cancelRSVP,
+  getGuests,
+} from "../controllers/rsvpController.js";
 import protect from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -17,6 +22,10 @@ router.get("/my-events", protect, getMyEvents);
 router.post("/", protect, createEvent);
 router.patch("/:id", protect, updateEvent);
 router.delete("/:id", protect, deleteEvent);
+
+router.post("/:id/rsvp", protect, createRSVP);
+router.delete("/:id/rsvp", protect, cancelRSVP);
+router.get("/:id/guests", protect, getGuests);
 
 router.get("/:id", getEventById);
 

@@ -25,7 +25,10 @@ const eventSchema = new mongoose.Schema(
     },
     price: { type: Number, default: 0 },
     currency: { type: String, default: "USD" },
-    capacity: Number,
+    capacity: {
+      type: Number,
+      default: null,
+    },
     requireApproval: { type: Boolean, default: false },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
   },
