@@ -99,18 +99,10 @@ export async function getMyEvents(req, res) {
 
 export async function getEventById(req, res) {
   try {
-    const { id } = req.params;
-
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid event ID",
-      });
-    }
-
-    // Find event
-    const event = await Event.findById(id).populate("host", "name email");
+    const event = await Event.findById(req.params.id).populate(
+      "host",
+      "name email",
+    );
 
     if (!event) {
       return res.status(404).json({
@@ -119,15 +111,7 @@ export async function getEventById(req, res) {
       });
     }
 
-    // Authorization
-    if (event.host._id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied",
-      });
-    }
-
-    return res.status(200).json({
+    return res.json({
       success: true,
       event,
     });
@@ -159,6 +143,113 @@ export async function getEvents(req, res) {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+    });
+  }
+}
+
+export async function updateEvent(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid event ID",
+      });
+    }
+
+    const event = await Event.findById(id);
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    if (event.host.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to edit this event.",
+      });
+    }
+
+    const allowedFields = [
+      "title",
+      "description",
+      "coverUrl",
+      "theme",
+      "startAt",
+      "endAt",
+      "timezone",
+      "locationType",
+      "venue",
+      "address",
+      "city",
+      "visibility",
+      "ticketType",
+      "price",
+      "currency",
+      "capacity",
+      "requireApproval",
+      "category",
+    ];
+
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        event[field] = req.body[field];
+      }
+    });
+
+    await event.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Event updated successfully",
+      event,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
+
+export async function deleteEvent(req, res) {
+  try {
+    const { id } = req.params;
+
+    const event = await Event.findById(id);
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    if (event.host.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to delete this event.",
+      });
+    }
+
+    await event.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "Event deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 }
