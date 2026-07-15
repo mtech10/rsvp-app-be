@@ -11,6 +11,9 @@ import {
   createRSVP,
   cancelRSVP,
   getGuests,
+  approveGuest,
+  rejectGuest,
+  getMyRSVP,
 } from "../controllers/rsvpController.js";
 import protect from "../middleware/authMiddleware.js";
 
@@ -26,6 +29,11 @@ router.delete("/:id", protect, deleteEvent);
 router.post("/:id/rsvp", protect, createRSVP);
 router.delete("/:id/rsvp", protect, cancelRSVP);
 router.get("/:id/guests", protect, getGuests);
+
+router.patch("/rsvp/:id/approve", protect, approveGuest);
+router.patch("/rsvp/:id/reject", protect, rejectGuest);
+
+router.get("/:id/my-rsvp", protect, getMyRSVP);
 
 router.get("/:id", getEventById);
 
