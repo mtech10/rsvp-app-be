@@ -1,5 +1,6 @@
 import Event from "../models/Event.js";
 import mongoose from "mongoose";
+import RSVP from "../models/RSVP.js";
 
 export async function createEvent(req, res) {
   try {
@@ -51,7 +52,6 @@ export async function createEvent(req, res) {
       requireApproval,
       category,
 
-      // The logged-in user becomes the host
       host: req.user._id,
     });
 
@@ -77,15 +77,44 @@ export async function createEvent(req, res) {
 
 export async function getMyEvents(req, res) {
   try {
-    const events = await Event.find({
-      host: req.user._id,
-    })
-      .sort({ createdAt: -1 })
-      .populate("host", "name email");
+    const events = await Event.find({ host: req.user._id }).sort({
+      createdAt: -1,
+    });
 
-    return res.status(200).json({
+    const eventsWithStats = await Promise.all(
+      events.map(async (event) => {
+        const totalGuests = await RSVP.countDocuments({
+          event: event._id,
+        });
+
+        const approvedGuests = await RSVP.countDocuments({
+          event: event._id,
+          status: "going",
+        });
+
+        const pendingGuests = await RSVP.countDocuments({
+          event: event._id,
+          status: "pending",
+        });
+
+        const rejectedGuests = await RSVP.countDocuments({
+          event: event._id,
+          status: "rejected",
+        });
+
+        return {
+          ...event.toObject(),
+          totalGuests,
+          approvedGuests,
+          pendingGuests,
+          rejectedGuests,
+        };
+      }),
+    );
+
+    return res.json({
       success: true,
-      events,
+      events: eventsWithStats,
     });
   } catch (error) {
     console.error(error);
@@ -111,9 +140,19 @@ export async function getEventById(req, res) {
       });
     }
 
+    const goingCount = await RSVP.countDocuments({
+      event: event._id,
+      status: "going",
+    });
+
+    console.log("Going Count:", goingCount);
+
     return res.json({
       success: true,
-      event,
+      event: {
+        ...event.toObject(),
+        goingCount,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -133,9 +172,23 @@ export async function getEvents(req, res) {
       .populate("host", "name email")
       .sort({ startAt: 1 });
 
+    const updatedEvents = [];
+
+    for (const event of events) {
+      const goingCount = await RSVP.countDocuments({
+        event: event._id,
+        status: "going",
+      });
+
+      updatedEvents.push({
+        ...event.toObject(),
+        goingCount,
+      });
+    }
+
     return res.status(200).json({
       success: true,
-      events,
+      events: updatedEvents,
     });
   } catch (error) {
     console.error(error);
