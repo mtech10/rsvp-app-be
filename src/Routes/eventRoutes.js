@@ -35,14 +35,6 @@ router.patch("/rsvp/:id/reject", protect, rejectGuest);
 
 router.get("/:id/my-rsvp", protect, getMyRSVP);
 
-// router.get("/:id", getEventById);
-router.get("/:id", (req, res) => {
-  console.log("ROUTE HIT:", req.params.id);
-
-  return res.json({
-    success: true,
-    message: "Route is working",
-  });
-});
+router.get("/:id", getEventById);
 
 export default router;

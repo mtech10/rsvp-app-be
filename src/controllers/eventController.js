@@ -145,8 +145,6 @@ export async function getEventById(req, res) {
       status: "going",
     });
 
-    console.log("Going Count:", goingCount);
-
     return res.json({
       success: true,
       event: {

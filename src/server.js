@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./Routes/authRoutes.js";
 import eventRoutes from "./Routes/eventRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 import connectDB from "./config/db.js";
 import dns from "node:dns/promises";
 
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 const PORT = process.env.PORT || 5001;
 

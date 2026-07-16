@@ -1,5 +1,6 @@
 import Event from "../models/Event.js";
 import RSVP from "../models/RSVP.js";
+import Notification from "../models/Notification.js";
 
 export async function createRSVP(req, res) {
   try {
@@ -18,7 +19,6 @@ export async function createRSVP(req, res) {
       });
     }
 
-    // Prevent organizer from RSVPing
     if (event.host.toString() === req.user._id.toString()) {
       return res.status(400).json({
         success: false,
@@ -56,6 +56,14 @@ export async function createRSVP(req, res) {
       user: req.user._id,
       tickets,
       status,
+    });
+
+    await Notification.create({
+      user: event.host,
+      title: "New RSVP Request",
+      message: `${req.user.name} requested to join "${event.title}".`,
+      type: "rsvp_request",
+      event: event._id,
     });
 
     return res.status(201).json({
@@ -142,6 +150,14 @@ export async function approveGuest(req, res) {
 
     await rsvp.save();
 
+    await Notification.create({
+      user: rsvp.user,
+      title: "RSVP Approved",
+      message: `Your RSVP for "${rsvp.event.title}" has been approved.`,
+      type: "rsvp_approved",
+      event: rsvp.event._id,
+    });
+
     return res.json({
       success: true,
       message: "Guest approved",
@@ -180,6 +196,14 @@ export async function rejectGuest(req, res) {
     rsvp.status = "rejected";
 
     await rsvp.save();
+
+    await Notification.create({
+      user: rsvp.user,
+      title: "RSVP Rejected",
+      message: `Your RSVP for "${rsvp.event.title}" has been rejected.`,
+      type: "rsvp_rejected",
+      event: rsvp.event._id,
+    });
 
     return res.json({
       success: true,
