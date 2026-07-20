@@ -32,6 +32,27 @@ export async function createRSVP(req, res) {
     });
 
     if (existingRSVP) {
+      if (existingRSVP.status === "cancelled") {
+        existingRSVP.status = event.requireApproval ? "pending" : "going";
+        existingRSVP.tickets = tickets;
+
+        await existingRSVP.save();
+
+        await Notification.create({
+          user: event.host,
+          title: "RSVP Request",
+          message: `${req.user.name} has RSVP'd again for "${event.title}".`,
+          type: "rsvp_request",
+          event: event._id,
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: "RSVP submitted successfully.",
+          rsvp: existingRSVP,
+        });
+      }
+
       return res.status(400).json({
         success: false,
         message: "You have already RSVP'd to this event",
@@ -82,10 +103,38 @@ export async function createRSVP(req, res) {
 }
 
 export async function cancelRSVP(req, res) {
-  res.json({
-    success: true,
-    message: "Cancel RSVP endpoint",
-  });
+  try {
+    const { id } = req.params;
+
+    const rsvp = await RSVP.findOne({
+      event: id,
+      user: req.user._id,
+    });
+
+    if (!rsvp) {
+      return res.status(404).json({
+        success: false,
+        message: "RSVP not found",
+      });
+    }
+
+    rsvp.status = "cancelled";
+
+    await rsvp.save();
+
+    return res.json({
+      success: true,
+      message: "RSVP cancelled successfully.",
+      rsvp,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 }
 
 export async function getGuests(req, res) {

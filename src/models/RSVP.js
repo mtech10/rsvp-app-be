@@ -16,7 +16,7 @@ const rsvpSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["going", "pending", "rejected"],
+      enum: ["going", "pending", "rejected", "cancelled"],
       default: "going",
     },
 
