@@ -16,6 +16,7 @@ import {
   getMyRSVP,
 } from "../controllers/rsvpController.js";
 import protect from "../middleware/authMiddleware.js";
+import { getEventAnalytics } from "../controllers/eventController.js";
 
 const router = express.Router();
 router.get("/", getEvents);
@@ -29,6 +30,8 @@ router.delete("/:id", protect, deleteEvent);
 router.post("/:id/rsvp", protect, createRSVP);
 router.delete("/:id/rsvp", protect, cancelRSVP);
 router.get("/:id/guests", protect, getGuests);
+
+router.get("/:id/analytics", protect, getEventAnalytics);
 
 router.patch("/rsvp/:id/approve", protect, approveGuest);
 router.patch("/rsvp/:id/reject", protect, rejectGuest);

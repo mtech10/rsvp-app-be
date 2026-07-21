@@ -304,3 +304,108 @@ export async function deleteEvent(req, res) {
     });
   }
 }
+
+export async function getEventAnalytics(req, res) {
+  try {
+    const { id } = req.params;
+
+    const event = await Event.findById(id);
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    if (event.host.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    const [totalGuests, going, pending, rejected, cancelled, ticketsSold] =
+      await Promise.all([
+        RSVP.countDocuments({ event: id }),
+        RSVP.countDocuments({ event: id, status: "going" }),
+        RSVP.countDocuments({ event: id, status: "pending" }),
+        RSVP.countDocuments({ event: id, status: "rejected" }),
+        RSVP.countDocuments({ event: id, status: "cancelled" }),
+
+        RSVP.aggregate([
+          {
+            $match: {
+              event: event._id,
+              status: { $ne: "cancelled" },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              total: { $sum: "$tickets" },
+            },
+          },
+        ]),
+      ]);
+    const capacity = event.capacity || 0;
+
+    const occupancy =
+      capacity > 0 ? Math.round((going / capacity) * 100) : null;
+
+    const recentRSVPs = await RSVP.find({
+      event: id,
+    })
+      .populate("user", "name email")
+      .sort({ updatedAt: -1 })
+      .limit(8)
+      .select("status tickets updatedAt user");
+
+    const dailyRSVPs = await RSVP.aggregate([
+      {
+        $match: {
+          event: event._id,
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$createdAt",
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: {
+          _id: 1,
+        },
+      },
+    ]);
+
+    return res.json({
+      success: true,
+      analytics: {
+        totalGuests,
+        going,
+        pending,
+        rejected,
+        cancelled,
+        ticketsSold: ticketsSold[0]?.total || 0,
+        capacity,
+        occupancy,
+        recentRSVPs,
+        dailyRSVPs,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
