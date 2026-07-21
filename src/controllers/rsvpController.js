@@ -1,6 +1,11 @@
 import Event from "../models/Event.js";
 import RSVP from "../models/RSVP.js";
-import Notification from "../models/Notification.js";
+import {
+  notifyOrganizerOfRSVP,
+  notifyOrganizerOfCancellation,
+  notifyGuestApproved,
+  notifyGuestRejected,
+} from "../utils/notificationService.js";
 
 export async function createRSVP(req, res) {
   try {
@@ -38,13 +43,7 @@ export async function createRSVP(req, res) {
 
         await existingRSVP.save();
 
-        await Notification.create({
-          user: event.host,
-          title: "RSVP Request",
-          message: `${req.user.name} has RSVP'd again for "${event.title}".`,
-          type: "rsvp_request",
-          event: event._id,
-        });
+        await notifyOrganizerOfRSVP(event, req.user);
 
         return res.status(200).json({
           success: true,
@@ -79,13 +78,7 @@ export async function createRSVP(req, res) {
       status,
     });
 
-    await Notification.create({
-      user: event.host,
-      title: "New RSVP Request",
-      message: `${req.user.name} requested to join "${event.title}".`,
-      type: "rsvp_request",
-      event: event._id,
-    });
+    await notifyOrganizerOfRSVP(event, req.user);
 
     return res.status(201).json({
       success: true,
@@ -109,7 +102,7 @@ export async function cancelRSVP(req, res) {
     const rsvp = await RSVP.findOne({
       event: id,
       user: req.user._id,
-    });
+    }).populate("event");
 
     if (!rsvp) {
       return res.status(404).json({
@@ -121,6 +114,8 @@ export async function cancelRSVP(req, res) {
     rsvp.status = "cancelled";
 
     await rsvp.save();
+
+    await notifyOrganizerOfCancellation(rsvp.event, req.user);
 
     return res.json({
       success: true,
@@ -175,7 +170,7 @@ export async function getGuests(req, res) {
   }
 }
 
-export async function approveGuest(req, res) {
+async function updateGuestStatus(req, res, status) {
   try {
     const { id } = req.params;
 
@@ -195,21 +190,23 @@ export async function approveGuest(req, res) {
       });
     }
 
-    rsvp.status = "going";
+    rsvp.status = status;
 
     await rsvp.save();
 
-    await Notification.create({
-      user: rsvp.user,
-      title: "RSVP Approved",
-      message: `Your RSVP for "${rsvp.event.title}" has been approved.`,
-      type: "rsvp_approved",
-      event: rsvp.event._id,
-    });
+    if (status === "going") {
+      await notifyGuestApproved(rsvp.event, {
+        _id: rsvp.user,
+      });
+    } else if (status === "rejected") {
+      await notifyGuestRejected(rsvp.event, {
+        _id: rsvp.user,
+      });
+    }
 
     return res.json({
       success: true,
-      message: "Guest approved",
+      message: status === "going" ? "Guest approved" : "Guest rejected",
       rsvp,
     });
   } catch (error) {
@@ -222,51 +219,12 @@ export async function approveGuest(req, res) {
   }
 }
 
+export async function approveGuest(req, res) {
+  return updateGuestStatus(req, res, "going");
+}
+
 export async function rejectGuest(req, res) {
-  try {
-    const { id } = req.params;
-
-    const rsvp = await RSVP.findById(id).populate("event");
-
-    if (!rsvp) {
-      return res.status(404).json({
-        success: false,
-        message: "RSVP not found",
-      });
-    }
-
-    if (rsvp.event.host.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized",
-      });
-    }
-
-    rsvp.status = "rejected";
-
-    await rsvp.save();
-
-    await Notification.create({
-      user: rsvp.user,
-      title: "RSVP Rejected",
-      message: `Your RSVP for "${rsvp.event.title}" has been rejected.`,
-      type: "rsvp_rejected",
-      event: rsvp.event._id,
-    });
-
-    return res.json({
-      success: true,
-      message: "Guest rejected",
-      rsvp,
-    });
-  } catch (error) {
-    console.error(error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+  return updateGuestStatus(req, res, "rejected");
 }
 
 export async function getMyRSVP(req, res) {
