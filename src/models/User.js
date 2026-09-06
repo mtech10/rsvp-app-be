@@ -19,12 +19,24 @@ const userSchema = new mongoose.Schema(
       required: true,
       select: false,
     },
-    // events: [
-    //   {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: "Event",
-    //   },
-    // ],
+
+    followedCategories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+      },
+    ],
+
+    preferredCities: {
+      type: [String],
+      default: [],
+    },
+
+    preferredLocationType: {
+      type: String,
+      enum: ["in_person", "online", "both"],
+      default: "both",
+    },
   },
   { timestamps: true },
 );

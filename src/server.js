@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./Routes/authRoutes.js";
 import eventRoutes from "./Routes/eventRoutes.js";
+import categoryRoutes from "./Routes/categoryRoutes.js";
+import recommendationRoutes from "./Routes/recommendationRoutes.js";
 import notificationRoutes from "./Routes/notificationRoutes.js";
 import connectDB from "./config/db.js";
 import dns from "node:dns/promises";
@@ -10,6 +12,7 @@ import dns from "node:dns/promises";
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 dotenv.config();
+
 const app = express();
 
 app.use(cors());
@@ -23,7 +26,9 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/categories", categoryRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/recommendations", recommendationRoutes);
 
 app.get("/api/test", (req, res) => {
   res.json({ success: true });

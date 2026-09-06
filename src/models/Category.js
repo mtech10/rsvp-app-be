@@ -1,5 +1,4 @@
-// models/Category.js
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const categorySchema = new mongoose.Schema(
   {
@@ -7,18 +6,20 @@ const categorySchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true, // e.g., "Tech Meetup", "Party", "Workshop"
+      trim: true,
     },
+
     description: {
       type: String,
       trim: true,
     },
+
     isActive: {
       type: Boolean,
-      default: true, // Admin can set this to false to hide it from the frontend dropdown
+      default: true,
     },
   },
   { timestamps: true },
 );
 
-module.exports = mongoose.model("Category", categorySchema);
+export default mongoose.model("Category", categorySchema);
