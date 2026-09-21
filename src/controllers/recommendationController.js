@@ -65,38 +65,40 @@ export async function getRecommendedEvents(req, res) {
       .limit(100)
       .lean();
 
-    const scoredEvents = events.map((event) => {
-      let score = 0;
+    const scoredEvents = events
+      .map((event) => {
+        let score = 0;
 
-      (event.categories || []).forEach((category) => {
-        score += categoryScores[String(category._id)] || 0;
-      });
+        (event.categories || []).forEach((category) => {
+          score += categoryScores[String(category._id)] || 0;
+        });
 
-      if (event.city) {
-        score += cityScores[event.city.toLowerCase()] || 0;
-      }
+        if (event.city) {
+          score += cityScores[event.city.toLowerCase()] || 0;
+        }
 
-      if (event.locationType) {
-        score += locationTypeScores[event.locationType] || 0;
-      }
+        if (event.locationType) {
+          score += locationTypeScores[event.locationType] || 0;
+        }
 
-      score += Math.min(event.popularityScore || 0, 20);
+        score += Math.min(event.popularityScore || 0, 20);
 
-      if (event.featured) {
-        score += 5;
-      }
+        if (event.featured) {
+          score += 5;
+        }
 
-      return {
-        ...event,
-        recommendationScore: score,
-      };
-    });
-
-    scoredEvents.sort((a, b) => b.recommendationScore - a.recommendationScore);
+        return {
+          ...event,
+          recommendationScore: score,
+        };
+      })
+      // A recommendation must have an actual recommendation signal.
+      .filter((event) => event.recommendationScore > 0)
+      .sort((a, b) => b.recommendationScore - a.recommendationScore);
 
     return res.status(200).json({
       success: true,
-      events: scoredEvents.slice(0, 20),
+      events: scoredEvents.slice(0, 6),
     });
   } catch (error) {
     console.error("RECOMMENDATIONS ERROR:", error);
