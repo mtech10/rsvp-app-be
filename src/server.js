@@ -15,7 +15,16 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = process.env.CLIENT_ORIGIN?.split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: allowedOrigins?.length ? allowedOrigins : true,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 connectDB();

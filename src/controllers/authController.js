@@ -1,7 +1,7 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { generateToken } from "../utils/generateToken.js";
+import { clearAuthCookie, setAuthCookie } from "../utils/authCookie.js";
 
 export async function register(req, res) {
   try {
@@ -17,10 +17,11 @@ export async function register(req, res) {
       password: hashedPassword,
     });
     const token = generateToken(newUser._id);
+    setAuthCookie(res, token);
+
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
-      token,
       user: {
         id: newUser._id,
         name: newUser.name,
@@ -49,11 +50,11 @@ export async function login(req, res) {
       return res.status(409).json({ message: "Invalid email or password" });
     }
     const token = generateToken(user._id);
+    setAuthCookie(res, token);
 
     return res.status(200).json({
       success: true,
       message: "Login successful",
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -68,6 +69,15 @@ export async function login(req, res) {
       message: "Internal server error",
     });
   }
+}
+
+export function logout(req, res) {
+  clearAuthCookie(res);
+
+  return res.status(200).json({
+    success: true,
+    message: "Logout successful",
+  });
 }
 
 export async function getCurrentUser(req, res) {

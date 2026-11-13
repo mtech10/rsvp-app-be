@@ -1,23 +1,17 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { getAuthToken } from "../utils/authCookie.js";
 
 export async function protect(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
+    const token = getAuthToken(req);
 
-    if (!authHeader) {
+    if (!token) {
       return res.status(401).json({
-        message: "Authorization header is missing",
+        success: false,
+        message: "Authentication cookie is missing",
       });
     }
-
-    if (!authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        message: "Invalid authorization format",
-      });
-    }
-
-    const token = authHeader.split(" ")[1];
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -38,7 +32,7 @@ export async function protect(req, res, next) {
 
     return res.status(401).json({
       success: false,
-      message: error.message,
+      message: "Invalid or expired authentication token",
     });
   }
 }
